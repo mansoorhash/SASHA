@@ -36,3 +36,7 @@ logs/
 .vscode/
 .DS_Store
 Thumbs.db
+
+#Project Files
+/reference_images
+*.pkl

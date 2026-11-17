@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (
 
 from src.ui.settings.camera import CameraConfiguration
 from src.ui.settings.ai_model import FaceScanningConfiguration
-
+from src.ui.settings.scan_info import ScanInfoPanel
 
 class SettingsPanel(QWidget):
     def __init__(self, state):
@@ -36,4 +36,7 @@ class SettingsPanel(QWidget):
         settings_layout.addWidget(self.ai_config)
 
         settings_layout.addStretch()
+        self.scan_info = ScanInfoPanel(self.shared_state)
+        settings_layout.addWidget(self.scan_info)
+
         self.layout.addWidget(self.settings_container)

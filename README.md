@@ -1,33 +1,27 @@
 # SASHA
 
-SASHA is a Windows desktop application being developed into a self-learning face recognition system. It uses PySide6 for the interface and OpenCV with DirectShow to discover and open cameras.
-
-## Project goal
-
-The planned system will detect the user's face in a camera feed and capture snapshots while it remains visible. The target capture interval is about five seconds initially, with the option to reduce it to one second as the model and performance improve.
-
-When the face is no longer detected, SASHA will take a short burst of snapshots and compare them with previously confirmed images of the user. The goal is to identify useful views of different facial regions, including angled and side-profile views where the person is not looking directly at the camera. Confirmed matches can then be used to refine the model so it recognizes the user from more viewpoints over time. This repeated capture, comparison, and training cycle is the intended "self-learning" behavior.
-
-This is the intended behavior, not a description of the current implementation. Face detection, snapshot capture, comparison, model training, and the face-loss response still need to be built.
+SASHA is a Windows desktop application for live camera preview and face recognition. It uses PySide6 for the interface, OpenCV with DirectShow for camera access, DeepFace's FaceNet model for face embeddings, and SciPy to assign each known name to at most one face per processed frame.
 
 ## Current features
 
-- Detect available DirectShow cameras and select one from the Settings panel.
-- Display the selected camera's live feed.
-- Show a Scan/Stop control and scanning status in the interface.
-- Write runtime logs to the console and `logs/`.
+- Discover and select a DirectShow camera, then display its live feed even when scanning is off.
+- Start and stop face scanning in a worker thread so the interface stays responsive.
+- Detect faces, ignore detections smaller than the configured minimum, and discard smaller boxes contained inside larger detections.
+- Compare normalized face embeddings with saved profiles using cosine distance. Faces that do not meet the matching threshold remain unknown.
+- Assign each enrolled name to at most one detected face per processed frame. Show recognized names and boxes on the camera feed.
+- Add embeddings for recognized people at the configured interval and save face memory when the scan worker stops.
+- Write application logs to the console and `logs/`.
 
-The scanning control currently changes only the interface state. Face detection or recognition is not implemented yet.
+SASHA expands its collection of embeddings for known people. It does not retrain the FaceNet model or automatically create a profile for an unknown person. Automatic additions currently use the recognition result; they do not have a separate verification step. Recognition accuracy has not yet been measured on a labeled test set.
 
 ## Requirements
 
-- Windows with a working webcam or other DirectShow camera
-- Python 3.12 (the version used for this project)
+- Windows with Python 3.12 and a DirectShow-compatible camera
 - Camera access enabled in Windows privacy settings
 
 ## Run locally
 
-In PowerShell, from the project directory:
+From the project directory in PowerShell:
 
 ```powershell
 python -m venv .venv
@@ -36,21 +30,28 @@ python -m pip install -r requirements.txt
 python app.py
 ```
 
-Select a camera under **Settings > Camera** to start the preview. Close the window to stop the camera and exit.
+If PowerShell blocks activation, use `.\.venv\Scripts\python.exe` instead of `python` for the install and run commands.
 
-If PowerShell blocks activation, you can use `.\.venv\Scripts\python.exe` in place of `python` for the install and run commands.
+To enroll a person, put a JPG or PNG image containing exactly one face in `reference_images/`, with the person's name as the filename, such as `Alice.jpg`. The application creates this directory if it does not exist. Reference images are read when face memory is initialized at startup. An existing saved profile takes precedence over a reference image with the same name.
+
+In the application, select a camera under **Settings > Camera**. The preview starts immediately. Press **Scan** to begin recognition and **Stop** to end the scan and save face memory. Closing the application also stops an active scan and saves its memory.
+
+The current configuration uses FaceNet with the OpenCV detector and a cosine distance threshold of `0.40`. Other scan settings are in `src/config.py`.
 
 ## Project layout
 
 ```text
-app.py                 Application entry point
-requirements.txt       Pinned Python dependencies
-src/drivers/camera.py  DirectShow camera discovery and capture
-src/ui/                PySide6 interface and settings
-src/utils/logger.py    Console and file logging
+app.py                    Application entry point
+requirements.txt          Pinned direct dependencies
+src/config.py             Recognition and learning settings
+src/drivers/camera.py     Camera discovery and capture
+src/scanning/worker.py    Detection, matching, and learning worker
+src/scanning/memory.py    Reference profiles and saved embeddings
+src/ui/                   PySide6 interface and settings
+src/utils/logger.py       Console and file logging
 ```
 
-Runtime logs and the local virtual environment are excluded from Git by `.gitignore`.
+`reference_images/`, `face_memory.pkl`, the local virtual environment, and runtime logs are excluded from Git. Keep reference images and saved face memory private.
 
 ## License
 

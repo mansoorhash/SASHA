@@ -1,11 +1,13 @@
 import logging
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel
-from PySide6.QtCore import Slot
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QMessageBox
+from PySide6.QtCore import Slot, Signal
 
 logger = logging.getLogger("SASHA.settings.face_scanning")
 
 class FaceScanningConfiguration(QWidget):
+    start_requested = Signal()
+    stop_requested = Signal()
 
     def __init__(self, state):
         super().__init__()
@@ -49,10 +51,19 @@ class FaceScanningConfiguration(QWidget):
 
     @Slot()
     def _scanning_changed(self):
-        self.scanning = not self.scanning
+        if self.scanning:
+            self.stop_requested.emit()
+        elif self.shared_state.get("selected_camera", None) is None:
+            logger.warning("Scan request rejected: no camera selected")
+            QMessageBox.critical(self, "Camera error", "Select a camera before scanning!")
+        else:
+            self.start_requested.emit()
+
+    @Slot(object)
+    def set_scanning(self, active):
+        self.scanning = active
         logger.info("Face scanning UI state changed to %s", "on" if self.scanning else "off")
         self.face_state.setText("Scanning" if self.scanning else "Inactive")
         self.camera_combo.setText("Stop" if self.scanning else "Scan")
-
         color = "green" if self.scanning else "gray"
         self.status_dot.setStyleSheet(f"color: {color}; font-size: 16px;")

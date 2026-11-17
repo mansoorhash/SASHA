@@ -1,10 +1,13 @@
 from PySide6.QtWidgets import QGroupBox, QVBoxLayout, QLabel
-from PySide6.QtCore import Qt, Slot, QTimer
-from PySide6.QtGui import QImage, QPixmap
+from PySide6.QtCore import Qt, Slot, QTimer, Signal, QRect
+from PySide6.QtGui import QImage, QPixmap, QPainter, QPen, QColor, QFont
 
 from src.drivers.camera import CameraDriver
 
 class CameraPanel(QGroupBox):
+    frame_ready = Signal(object)
+    faces_data = None
+
     def __init__(self, state, logger):
         super().__init__("Camera Feed")
         self.shared_state = state
@@ -22,7 +25,7 @@ class CameraPanel(QGroupBox):
         self.layout.addWidget(self.camera_label)
 
     @Slot(str, object)
-    def _state_update(self, key, value):
+    def state_update(self, key, value):
         if key != "selected_camera":
             return
 
@@ -54,10 +57,33 @@ class CameraPanel(QGroupBox):
                 self.camera_label.setText("Camera feed unavailable")
                 return
 
+            self.frame_ready.emit(frame)
+
             height, width, _ = frame.shape
             image = QImage(
                 frame.data, width, height, frame.strides[0], QImage.Format.Format_BGR888
             ).copy()
+
+            if self.faces_data:
+                painter = QPainter(image)
+
+                color = "#00FF00"
+                pen = QPen(QColor(color), 3)
+                painter.setPen(pen)
+
+                for face in self.faces_data:
+                    name = face.get("name")
+                    painter.setFont(QFont("Times",20))
+
+                    box = face.get("box")
+                    x, y, w, h = box["x"], box["y"], box["w"], box["h"]
+
+                    painter.drawRect(QRect(x,y,w,h))
+                    painter.drawText(x,y - 4,name)
+
+
+                painter.end()
+
             pixmap = QPixmap.fromImage(image)
 
             self.camera_label.setPixmap(

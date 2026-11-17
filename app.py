@@ -2,7 +2,6 @@
 import sys
 import logging
 
-from src.main import SASHAMain
 from src.utils.logger import get_logger
 
 
@@ -19,6 +18,8 @@ def main():
 
         sys.excepthook = handle_uncaught_exception
         logger.info("Starting SASHA application")
+
+        from src.main import SASHAMain
 
         app = SASHAMain(logger)
         exit_code = app.run()

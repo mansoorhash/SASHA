@@ -1,6 +1,6 @@
 PySide6==6.11.0
 numpy==2.5.4
-opencv-contrib-python==4.14.0.94
-scikit-learn==1.9.1
-Pillow==12.3.0
+opencv-contrib-python-headless==4.14.0.94
 pygrabber==0.2
+deepface==0.0.104
+scipy==1.18.1

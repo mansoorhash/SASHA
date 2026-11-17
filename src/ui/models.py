@@ -1,5 +1,4 @@
-from dataclasses import dataclass
-from PySide6.QtCore import QObject, Signal, Slot
+from PySide6.QtCore import QObject, Signal
 
 class ObservableDict(QObject):
     value_change = Signal(str, object)
@@ -16,7 +15,3 @@ class ObservableDict(QObject):
 
     def get(self, key, default=None):
         return self._data.get(key, default)
-
-@dataclass
-class AppState:
-    active_cameras:  int = 0
